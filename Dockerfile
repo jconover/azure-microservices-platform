@@ -36,5 +36,13 @@ RUN ARCH=$(uname -m | sed 's/x86_64/amd64/g' | sed 's/aarch64/arm64/g') && \
     mv linux-${ARCH}/helm /usr/local/bin/ && \
     rm -rf linux-${ARCH} helm-*.tar.gz
 
+# Install Flux CLI for ARM64
+# Using fluxcd.io install script (auto-detects architecture)
+#RUN curl -L --progress-bar -s https://fluxcd.io/install.sh | bash && \
+ #   mv $HOME/.flux/bin/flux /usr/local/bin/flux
+
+#RUN curl -s https://fluxcd.io/install.sh | sudo FLUX_VERSION=2.0.0 bash
+
+
 WORKDIR /workspace
 CMD ["/bin/bash"]

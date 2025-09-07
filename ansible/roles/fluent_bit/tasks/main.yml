@@ -1,0 +1,27 @@
+---
+- name: Add Fluent Bit repository key
+  apt_key:
+    url: https://packages.fluentbit.io/fluentbit.key
+    state: present
+
+- name: Add Fluent Bit repository
+  apt_repository:
+    repo: "deb https://packages.fluentbit.io/ubuntu/focal focal main"
+    state: present
+
+- name: Install Fluent Bit
+  apt:
+    name: fluent-bit
+    state: present
+    update_cache: yes
+
+- name: Configure Fluent Bit
+  template:
+    src: fluent-bit.conf.j2
+    dest: /etc/fluent-bit/fluent-bit.conf
+
+- name: Start and enable Fluent Bit
+  systemd:
+    name: fluent-bit
+    state: started
+    enabled: yes

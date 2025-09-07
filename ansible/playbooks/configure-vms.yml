@@ -1,0 +1,42 @@
+---
+- name: Configure Azure VMs for Supporting Services
+  hosts: all
+  become: yes
+  vars:
+    monitoring_namespace: monitoring
+    logging_namespace: logging
+
+  tasks:
+    - name: Update and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages
+      package:
+        name:
+          - docker.io
+          - docker-compose
+          - curl
+          - wget
+          - vim
+          - htop
+          - net-tools
+        state: present
+
+    - name: Configure Docker
+      include_role:
+        name: docker
+
+    - name: Install Prometheus Node Exporter
+      include_role:
+        name: prometheus_node_exporter
+
+    - name: Install Fluent Bit
+      include_role:
+        name: fluent_bit
+
+    - name: Configure Azure Monitor Agent
+      include_role:
+        name: azure_monitor_agent

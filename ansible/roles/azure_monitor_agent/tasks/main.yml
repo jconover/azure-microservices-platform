@@ -1,0 +1,18 @@
+---
+- name: Download Azure Monitor Agent
+  get_url:
+    url: "https://github.com/microsoft/OMS-Agent-for-Linux/releases/download/OMSAgent_v1.14.11-0/omsagent-1.14.11-0.universal.x64.sh"
+    dest: /tmp/omsagent.sh
+    mode: '0755'
+
+- name: Install Azure Monitor Agent
+  shell: |
+    sh /tmp/omsagent.sh --install -w {{ workspace_id }} -s {{ workspace_key }}
+  args:
+    creates: /opt/microsoft/omsagent/bin/omsagent
+
+- name: Start OMS Agent
+  systemd:
+    name: omsagent
+    state: started
+    enabled: yes

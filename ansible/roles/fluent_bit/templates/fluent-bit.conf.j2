@@ -1,0 +1,23 @@
+[SERVICE]
+    Flush        5
+    Daemon       Off
+    Log_Level    info
+    Parsers_File parsers.conf
+
+[INPUT]
+    Name              systemd
+    Tag               host.*
+    Systemd_Filter    _SYSTEMD_UNIT=docker.service
+    Read_From_Tail    On
+
+[INPUT]
+    Name              tail
+    Path              /var/log/*.log
+    Tag               logs.*
+    Parser            docker
+
+[OUTPUT]
+    Name              forward
+    Match             *
+    Host              {{ fluentd_host | default("localhost") }}
+    Port              24224

@@ -1,0 +1,9 @@
+[vms]
+vm1 ansible_host=10.0.3.10 ansible_user=azureuser
+vm2 ansible_host=10.0.3.11 ansible_user=azureuser
+
+[vms:vars]
+ansible_python_interpreter=/usr/bin/python3
+workspace_id=YOUR_WORKSPACE_ID
+workspace_key=YOUR_WORKSPACE_KEY
+fluentd_host=fluentd.monitoring.svc.cluster.local
