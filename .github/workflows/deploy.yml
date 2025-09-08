@@ -1,0 +1,90 @@
+name: Deploy Microservices Platform
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, staging, production]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.0
+    
+    - name: Terraform Init
+      run: |
+        cd terraform/environments/${{ matrix.environment }}
+        terraform init
+    
+    - name: Terraform Plan
+      run: |
+        cd terraform/environments/${{ matrix.environment }}
+        terraform plan -out=tfplan
+    
+    - name: Upload Plan
+      uses: actions/upload-artifact@v3
+      with:
+        name: tfplan-${{ matrix.environment }}
+        path: terraform/environments/${{ matrix.environment }}/tfplan
+
+  terraform-apply:
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        environment: [dev, staging, production]
+    environment: ${{ matrix.environment }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+    
+    - name: Download Plan
+      uses: actions/download-artifact@v3
+      with:
+        name: tfplan-${{ matrix.environment }}
+        path: terraform/environments/${{ matrix.environment }}
+    
+    - name: Terraform Apply
+      run: |
+        cd terraform/environments/${{ matrix.environment }}
+        terraform init
+        terraform apply tfplan
+
+  deploy-applications:
+    needs: terraform-apply
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Flux CLI
+      run: |
+        curl -s https://fluxcd.io/install.sh | sudo bash
+    
+    - name: Sync GitOps Repository
+      run: |
+        flux reconcile source git flux-system
+        flux reconcile kustomization flux-system

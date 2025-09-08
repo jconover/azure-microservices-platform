@@ -10,7 +10,7 @@ terraform {
 
   backend "azurerm" {
     resource_group_name  = "terraform-state-rg"
-    storage_account_name = "tfstatedev"
+    storage_account_name = "tfstatedev5ba8b4"
     container_name       = "tfstate"
     key                  = "dev.terraform.tfstate"
   }
@@ -102,7 +102,7 @@ module "aks" {
   environment                = local.environment
   location                   = local.location
   resource_group_name        = azurerm_resource_group.main.name
-  kubernetes_version         = "1.27.3"
+  kubernetes_version         = "1.32"
   aks_subnet_id              = module.networking.aks_subnet_id
   dns_service_ip             = "10.3.0.10"
   service_cidr               = "10.3.0.0/24"
