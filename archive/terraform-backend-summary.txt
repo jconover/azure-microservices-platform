@@ -1,0 +1,27 @@
+Terraform Backend Configuration Summary
+========================================
+Generated: Sun Sep  7 23:15:20 UTC 2025
+Unique ID: 5ba8b4
+
+Storage Accounts Created:
+-------------------------
+dev: tfstatedev5ba8b4
+  Config file: terraform-backend-dev.conf
+staging: tfstatestaging5ba8b4
+  Config file: terraform-backend-staging.conf
+production: tfstateproduction5ba8b4
+  Config file: terraform-backend-production.conf
+
+To initialize Terraform for each environment:
+----------------------------------------------
+cd terraform/environments/dev
+terraform init -backend-config=../../../terraform-backend-dev.conf
+
+cd terraform/environments/staging
+terraform init -backend-config=../../../terraform-backend-staging.conf
+
+cd terraform/environments/production
+terraform init -backend-config=../../../terraform-backend-production.conf
+
+Or use the -reconfigure flag if already initialized:
+terraform init -reconfigure -backend-config=../../../terraform-backend-{env}.conf

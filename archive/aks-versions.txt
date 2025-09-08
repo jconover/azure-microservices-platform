@@ -1,0 +1,14 @@
+AKS Supported Versions (as of Sun Sep  7 19:10:44 CDT 2025)
+=====================================
+Latest Stable: 1.29.2
+
+To use a different version, run:
+terraform apply -var="kubernetes_version=VERSION"
+
+For example:
+terraform apply -var="kubernetes_version=1.29.2"
+terraform apply -var="kubernetes_version=1.28.5"
+terraform apply -var="kubernetes_version=1.30.0"
+
+To check current versions in your region:
+az aks get-versions --location eastus --output table

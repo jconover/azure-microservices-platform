@@ -1,40 +1,26 @@
-variable "prefix" {
-  type = string
+variable "project_name" {
+  description = "Project name"
+  type        = string
 }
 
 variable "environment" {
-  type = string
+  description = "Environment name"
+  type        = string
 }
 
 variable "location" {
-  type = string
+  description = "Azure region"
+  type        = string
 }
 
-variable "resource_group_name" {
-  type = string
-}
-
-variable "sku" {
-  type = string
-}
-
-variable "retention_days" {
-  type = number
-}
-
-variable "allowed_ip_range" {
-  type = string
-}
-
-variable "aks_subnet_id" {
-  type = string
-}
-
-variable "aks_principal_id" {
-  type = string
+variable "acr_sku" {
+  description = "ACR SKU (Basic, Standard, or Premium)"
+  type        = string
+  default     = "Standard"
 }
 
 variable "tags" {
-  type    = map(string)
-  default = {}
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
 }

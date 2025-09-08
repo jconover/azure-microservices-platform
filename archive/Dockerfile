@@ -2,7 +2,7 @@
 FROM fedora:40
 
 RUN dnf update -y && dnf install -y \
-    curl wget git vim python3 python3-pip unzip tar\
+    curl wget git vim python3 python3-pip unzip tar make openssl \
     && dnf clean all
 
 # Download latest Terraform (1.13.1) for ARM64
@@ -41,8 +41,13 @@ RUN ARCH=$(uname -m | sed 's/x86_64/amd64/g' | sed 's/aarch64/arm64/g') && \
 #RUN curl -L --progress-bar -s https://fluxcd.io/install.sh | bash && \
  #   mv $HOME/.flux/bin/flux /usr/local/bin/flux
 
-#RUN curl -s https://fluxcd.io/install.sh | sudo FLUX_VERSION=2.0.0 bash
+# RUN curl -s https://fluxcd.io/install.sh | sudo FLUX_VERSION=2.0.0 bash
 
+# add chrony for time sync
+RUN dnf install -y \
+    chrony \
+    && systemctl enable chronyd || true
 
 WORKDIR /workspace
-CMD ["/bin/bash"]
+# Ensure time sync on start
+CMD ["sh", "-c", "chronyc makestep && bash"]

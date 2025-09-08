@@ -1,0 +1,38 @@
+---
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+    update_cache: yes
+
+- name: Install Docker Compose
+  get_url:
+    url: https://github.com/docker/compose/releases/latest/download/docker-compose-Linux-x86_64
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+
+- name: Create monitoring directory
+  file:
+    path: /opt/monitoring
+    state: directory
+    mode: '0755'
+
+- name: Deploy Prometheus configuration
+  template:
+    src: prometheus.yml.j2
+    dest: /opt/monitoring/prometheus.yml
+
+- name: Deploy Grafana configuration
+  template:
+    src: grafana.ini.j2
+    dest: /opt/monitoring/grafana.ini
+
+- name: Deploy docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/monitoring/docker-compose.yml
+
+- name: Start monitoring stack
+  docker_compose:
+    project_src: /opt/monitoring
+    state: present

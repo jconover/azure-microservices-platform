@@ -1,2 +1,6 @@
-admin_group_object_id = "0a9332d4-f405-4f1a-b93c-b6c3f02c0021"
-kubernetes_version = "1.29.2"
+# Basic configuration for development environment
+project_name = "microservices"
+location     = "East US"
+
+# Admin IP range - UPDATE THIS with your actual IP
+admin_ip_range = "0.0.0.0/32"

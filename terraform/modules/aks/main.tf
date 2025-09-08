@@ -1,34 +1,32 @@
-# AKS Cluster Module
+resource "azurerm_resource_group" "aks" {
+  name     = "${var.project_name}-${var.environment}-aks-rg"
+  location = var.location
+  tags     = var.tags
+}
+
 resource "azurerm_kubernetes_cluster" "main" {
-  name                = "${var.prefix}-aks-${var.environment}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  dns_prefix          = "${var.prefix}-${var.environment}"
+  name                = "${var.project_name}-${var.environment}-aks"
+  location            = azurerm_resource_group.aks.location
+  resource_group_name = azurerm_resource_group.aks.name
+  dns_prefix          = "${var.project_name}-${var.environment}"
   kubernetes_version  = var.kubernetes_version
 
   default_node_pool {
-    name                = "system"
-    node_count          = var.system_node_count
-    vm_size             = var.system_node_size
-    vnet_subnet_id      = var.aks_subnet_id
+    name                = "default"
+    node_count          = var.node_count
+    vm_size             = var.node_size
+    vnet_subnet_id      = var.subnet_id
     type                = "VirtualMachineScaleSets"
     enable_auto_scaling = true
-    min_count           = var.system_min_count
-    max_count           = var.system_max_count
+    min_count           = var.node_count
+    max_count           = var.node_count * 2
 
     node_labels = {
-      "nodepool-type" = "system"
-      "environment"   = var.environment
-      "nodepoolos"    = "linux"
+      environment = var.environment
+      nodepool    = "default"
     }
 
-    tags = merge(
-      var.tags,
-      {
-        "nodepool-type" = "system"
-        "environment"   = var.environment
-      }
-    )
+    tags = var.tags
   }
 
   identity {
@@ -36,66 +34,49 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   network_profile {
-    network_plugin     = "azure"
-    network_policy     = "calico"
-    dns_service_ip     = var.dns_service_ip
-    service_cidr       = var.service_cidr
-    load_balancer_sku  = "standard"
+    network_plugin    = "azure"
+    network_policy    = "calico"
+    load_balancer_sku = "standard"
+    service_cidr      = var.service_cidr
+    dns_service_ip    = var.dns_service_ip
   }
 
-  role_based_access_control_enabled = true
-
+  # Fixed: Include managed = true (required despite deprecation warning)
   azure_active_directory_role_based_access_control {
-    managed                = true
+    managed                = true # Required field (will default to true in v4.0)
     azure_rbac_enabled     = true
-    admin_group_object_ids = var.admin_group_object_ids
+    admin_group_object_ids = length(var.admin_group_object_ids) > 0 ? var.admin_group_object_ids : null
   }
 
   oms_agent {
     log_analytics_workspace_id = var.log_analytics_workspace_id
   }
 
-  ingress_application_gateway {
-    gateway_id = var.application_gateway_id
+  key_vault_secrets_provider {
+    secret_rotation_enabled = true
   }
 
-  azure_policy_enabled = true
+  workload_identity_enabled = true
+  oidc_issuer_enabled       = true
 
-  tags = merge(
-    var.tags,
-    {
-      Environment = var.environment
-      ManagedBy   = "Terraform"
-    }
-  )
+  tags = var.tags
+
+  timeouts {
+    create = "45m"
+    update = "45m"
+    delete = "45m"
+  }
 }
 
-# User Node Pool for Applications
-resource "azurerm_kubernetes_cluster_node_pool" "user" {
-  name                  = "user"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
-  vm_size               = var.user_node_size
-  node_count            = var.user_node_count
-  vnet_subnet_id        = var.aks_subnet_id
-  enable_auto_scaling   = true
-  min_count             = var.user_min_count
-  max_count             = var.user_max_count
+resource "azurerm_role_assignment" "aks_acr" {
+  principal_id                     = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
+  role_definition_name             = "AcrPull"
+  scope                            = var.acr_id
+  skip_service_principal_aad_check = true
+}
 
-  node_labels = {
-    "nodepool-type" = "user"
-    "environment"   = var.environment
-    "nodepoolos"    = "linux"
-  }
-
-  node_taints = [
-    "workload=user:NoSchedule"
-  ]
-
-  tags = merge(
-    var.tags,
-    {
-      "nodepool-type" = "user"
-      "environment"   = var.environment
-    }
-  )
+resource "azurerm_role_assignment" "aks_network" {
+  principal_id         = azurerm_kubernetes_cluster.main.identity[0].principal_id
+  role_definition_name = "Network Contributor"
+  scope                = var.subnet_id
 }

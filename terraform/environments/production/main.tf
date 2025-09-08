@@ -1,126 +1,103 @@
 terraform {
-  required_version = ">= 1.0"
-  
+  required_version = ">= 1.5.0"
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 3.70"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.5"
     }
   }
 
-  backend "azurerm" {
-    resource_group_name  = "terraform-state-rg"
-    storage_account_name = "tfstateproduction5ba8b4"
-    container_name       = "tfstate"
-    key                  = "production.terraform.tfstate"
-  }
+  # Uncomment when backend is configured
+  # backend "azurerm" {
+  #   resource_group_name  = "terraform-state-rg"
+  #   storage_account_name = "tfstatestore"
+  #   container_name      = "tfstate"
+  #   key                 = "production-platform.tfstate"
+  # }
 }
 
 provider "azurerm" {
-  features {}
-}
-
-locals {
-  environment = "production"
-  prefix      = "microservices"
-  location    = "East US"
-  
-  tags = {
-    Environment = local.environment
-    Project     = "Microservices Platform"
-    ManagedBy   = "Terraform"
-    CostCenter  = "Engineering"
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+    key_vault {
+      purge_soft_delete_on_destroy    = false
+      recover_soft_deleted_key_vaults = true
+    }
+    application_insights {
+      disable_generated_rule = true
+    }
   }
 }
 
-# Resource Group
-resource "azurerm_resource_group" "main" {
-  name     = "${local.prefix}-rg-${local.environment}"
-  location = local.location
-  tags     = local.tags
-}
+provider "random" {}
 
-# Log Analytics Workspace
-resource "azurerm_log_analytics_workspace" "main" {
-  name                = "${local.prefix}-law-${local.environment}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku                 = "PerGB2018"
-  retention_in_days   = 90
-  tags                = local.tags
-}
-
-# Networking Module
 module "networking" {
   source = "../../modules/networking"
 
-  prefix               = local.prefix
-  environment          = local.environment
-  location             = local.location
-  resource_group_name  = azurerm_resource_group.main.name
-  vnet_address_space   = ["10.0.0.0/16"]
-  aks_subnet_prefix    = "10.0.1.0/24"
-  appgw_subnet_prefix  = "10.0.2.0/24"
-  vm_subnet_prefix     = "10.0.3.0/24"
-  tags                 = local.tags
+  project_name      = var.project_name
+  environment       = local.environment
+  location          = var.location
+  vnet_cidr         = var.vnet_cidrs[local.environment]
+  aks_subnet_cidr   = var.aks_subnet_cidrs[local.environment]
+  appgw_subnet_cidr = var.appgw_subnet_cidrs[local.environment]
+  vm_subnet_cidr    = var.vm_subnet_cidrs[local.environment]
+  admin_ip_range    = var.admin_ip_range
+  tags              = local.common_tags
 }
 
-# Container Registry Module
 module "acr" {
   source = "../../modules/acr"
 
-  prefix              = local.prefix
-  environment         = local.environment
-  location            = local.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku                 = "Premium"
-  retention_days      = 90
-  allowed_ip_range    = "0.0.0.0/0"
-  aks_subnet_id       = module.networking.aks_subnet_id
-  aks_principal_id    = module.aks.cluster_identity_principal_id
-  tags                = local.tags
+  project_name = var.project_name
+  environment  = local.environment
+  location     = var.location
+  acr_sku      = local.environment == "production" ? "Premium" : "Standard"
+  tags         = local.common_tags
 }
 
-# Application Gateway Module
-module "app_gateway" {
-  source = "../../modules/app-gateway"
+module "monitoring" {
+  source = "../../modules/monitoring"
 
-  prefix              = local.prefix
-  environment         = local.environment
-  location            = local.location
-  resource_group_name = azurerm_resource_group.main.name
-  appgw_subnet_id     = module.networking.appgw_subnet_id
-  capacity            = 2
-  tags                = local.tags
+  project_name   = var.project_name
+  environment    = local.environment
+  location       = var.location
+  retention_days = local.environment == "production" ? 90 : 30
+  tags           = local.common_tags
 }
 
-# AKS Module
 module "aks" {
   source = "../../modules/aks"
 
-  prefix                     = local.prefix
+  project_name               = var.project_name
   environment                = local.environment
-  location                   = local.location
-  resource_group_name        = azurerm_resource_group.main.name
-  kubernetes_version         = "1.27.3"
-  aks_subnet_id              = module.networking.aks_subnet_id
-  dns_service_ip             = "10.2.0.10"
-  service_cidr               = "10.2.0.0/24"
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
-  application_gateway_id     = module.app_gateway.application_gateway_id
-  admin_group_object_ids     = [var.admin_group_object_id]
-  
-  # System node pool
-  system_node_count = 3
-  system_node_size  = "Standard_D4s_v3"
-  system_min_count  = 3
-  system_max_count  = 5
-  
-  # User node pool
-  user_node_count = 3
-  user_node_size  = "Standard_D8s_v3"
-  user_min_count  = 3
-  user_max_count  = 10
-  
-  tags = local.tags
+  location                   = var.location
+  kubernetes_version         = var.kubernetes_version
+  node_count                 = var.node_count[local.environment]
+  node_size                  = var.node_size[local.environment]
+  subnet_id                  = module.networking.aks_subnet_id
+  acr_id                     = module.acr.acr_id
+  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
+  admin_group_object_ids     = var.admin_group_object_ids
+  service_cidr               = "172.18.0.0/16"
+  dns_service_ip             = "172.18.0.10"
+  tags                       = local.common_tags
+}
+
+module "application_gateway" {
+  source = "../../modules/application-gateway"
+
+  project_name        = var.project_name
+  environment         = local.environment
+  location            = var.location
+  resource_group_name = module.networking.resource_group_name
+  subnet_id           = module.networking.appgw_subnet_id
+  appgw_capacity      = local.environment == "production" ? 3 : 2
+  tags                = local.common_tags
 }

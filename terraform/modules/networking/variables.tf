@@ -1,5 +1,5 @@
-variable "prefix" {
-  description = "Prefix for resource names"
+variable "project_name" {
+  description = "Project name"
   type        = string
 }
 
@@ -13,29 +13,30 @@ variable "location" {
   type        = string
 }
 
-variable "resource_group_name" {
-  description = "Resource group name"
+variable "vnet_cidr" {
+  description = "CIDR block for VNet"
   type        = string
 }
 
-variable "vnet_address_space" {
-  description = "VNet address space"
-  type        = list(string)
-}
-
-variable "aks_subnet_prefix" {
-  description = "AKS subnet prefix"
+variable "aks_subnet_cidr" {
+  description = "CIDR block for AKS subnet"
   type        = string
 }
 
-variable "appgw_subnet_prefix" {
-  description = "Application Gateway subnet prefix"
+variable "appgw_subnet_cidr" {
+  description = "CIDR block for Application Gateway subnet"
   type        = string
 }
 
-variable "vm_subnet_prefix" {
-  description = "VM subnet prefix"
+variable "vm_subnet_cidr" {
+  description = "CIDR block for VM subnet"
   type        = string
+}
+
+variable "admin_ip_range" {
+  description = "IP range for admin access"
+  type        = string
+  default     = "*"
 }
 
 variable "tags" {

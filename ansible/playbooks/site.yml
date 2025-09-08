@@ -1,0 +1,14 @@
+---
+- name: Configure monitoring VMs
+  hosts: monitoring
+  become: yes
+  roles:
+    - common
+    - monitoring
+
+- name: Configure logging VMs
+  hosts: logging
+  become: yes
+  roles:
+    - common
+    - logging

@@ -1,80 +1,68 @@
-variable "prefix" {
-  type = string
+variable "project_name" {
+  description = "Project name"
+  type        = string
 }
 
 variable "environment" {
-  type = string
+  description = "Environment name"
+  type        = string
 }
 
 variable "location" {
-  type = string
-}
-
-variable "resource_group_name" {
-  type = string
+  description = "Azure region"
+  type        = string
 }
 
 variable "kubernetes_version" {
-  type = string
+  description = "Kubernetes version"
+  type        = string
 }
 
-variable "aks_subnet_id" {
-  type = string
+variable "node_count" {
+  description = "Number of nodes"
+  type        = number
 }
 
-variable "dns_service_ip" {
-  type = string
+variable "node_size" {
+  description = "VM size for nodes"
+  type        = string
 }
 
-variable "service_cidr" {
-  type = string
+variable "subnet_id" {
+  description = "Subnet ID for AKS"
+  type        = string
+}
+
+variable "acr_id" {
+  description = "ACR resource ID"
+  type        = string
 }
 
 variable "log_analytics_workspace_id" {
-  type = string
-}
-
-variable "application_gateway_id" {
-  type = string
+  description = "Log Analytics workspace ID"
+  type        = string
 }
 
 variable "admin_group_object_ids" {
-  type = list(string)
+  description = "AAD group object IDs for cluster admin"
+  type        = list(string)
+  default     = []
 }
 
-variable "system_node_count" {
-  type = number
+variable "service_cidr" {
+  description = "Service CIDR for Kubernetes services"
+  type        = string
+  default     = "172.16.0.0/16"
 }
 
-variable "system_node_size" {
-  type = string
-}
-
-variable "system_min_count" {
-  type = number
-}
-
-variable "system_max_count" {
-  type = number
-}
-
-variable "user_node_count" {
-  type = number
-}
-
-variable "user_node_size" {
-  type = string
-}
-
-variable "user_min_count" {
-  type = number
-}
-
-variable "user_max_count" {
-  type = number
+variable "dns_service_ip" {
+  description = "DNS service IP (must be within service CIDR)"
+  type        = string
+  default     = "172.16.0.10"
 }
 
 variable "tags" {
-  type    = map(string)
-  default = {}
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
 }
