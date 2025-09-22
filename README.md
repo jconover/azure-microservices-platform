@@ -4,6 +4,9 @@ A complete multi-environment microservices platform built on Azure with automate
 
 ## 🏗️ Architecture Overview
 
+[View Architecture Diagram](docs/ARCHITECTURE_DIAGRAM.md)
+
+
 - **Infrastructure**: Azure Kubernetes Service (AKS) clusters for dev, staging, and production
 - **GitOps**: ArgoCD for continuous deployment
 - **Configuration Management**: Ansible for VM configuration
